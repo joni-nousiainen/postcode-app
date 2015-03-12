@@ -1,0 +1,17 @@
+# IntelliJ IDEA
+*.iml
+.idea/
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Vaadin widgetsets
+src/main/resources/VAADIN/widgetsets/*
+
+# Postcode data files
+src/main/resources/BAF/*

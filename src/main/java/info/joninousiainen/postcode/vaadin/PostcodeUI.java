@@ -1,33 +1,103 @@
 package info.joninousiainen.postcode.vaadin;
 
 import com.vaadin.annotations.Theme;
+import com.vaadin.event.ShortcutAction;
 import com.vaadin.server.Page;
 import com.vaadin.server.VaadinRequest;
-import com.vaadin.ui.Label;
-import com.vaadin.ui.UI;
-import com.vaadin.ui.VerticalLayout;
+import com.vaadin.shared.ui.MarginInfo;
+import com.vaadin.ui.*;
 import info.joninousiainen.postcode.services.PostcodeService;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.vaadin.spring.annotation.VaadinComponent;
 import org.vaadin.spring.annotation.VaadinUI;
+import org.vaadin.spring.annotation.VaadinUIScope;
+
+import java.util.Map;
+import java.util.Set;
 
 @VaadinUI
 @Theme("valo")
 public class PostcodeUI extends UI {
     @Autowired
-    private PostcodeService postcodeService;
+    private SearchComponent searchComponent;
 
     @Override
     protected void init(VaadinRequest request) {
         Page.getCurrent().setTitle("Postcode");
+        this.setContent(searchComponent);
+    }
+}
 
-        final VerticalLayout layout = new VerticalLayout();
-        layout.setSizeFull();
-        layout.setMargin(true);
-        layout.setSpacing(true);
+@VaadinComponent
+@VaadinUIScope
+class SearchComponent extends CustomComponent {
+    @Autowired
+    private PostcodeService postcodeService;
 
-        int totalUniqueStreetNames = postcodeService.getTotalUniqueStreetNames();
-        layout.addComponent(new Label("Total unique street names: " + totalUniqueStreetNames));
+    private TextField searchField;
+    private VerticalLayout searchResultsLayout;
 
-        this.setContent(layout);
+    @Override
+    public void attach() {
+        super.attach();
+
+        VerticalLayout mainLayout = new VerticalLayout();
+        mainLayout.setWidth(100f, Unit.PERCENTAGE);
+        mainLayout.setDefaultComponentAlignment(Alignment.TOP_CENTER);
+
+        HorizontalLayout searchLayout = new HorizontalLayout();
+        searchLayout.setMargin(new MarginInfo(true, false, true, false));
+        searchLayout.setWidth(80f, Unit.PERCENTAGE);
+        searchLayout.setSpacing(true);
+        mainLayout.addComponent(searchLayout);
+
+        searchField = new TextField();
+        searchField.setWidth(100f, Unit.PERCENTAGE);
+        searchField.focus();
+        searchLayout.addComponent(searchField);
+
+        searchResultsLayout = new VerticalLayout();
+        searchResultsLayout.setWidth(80f, Unit.PERCENTAGE);
+        searchResultsLayout.setSpacing(true);
+        searchResultsLayout.setDefaultComponentAlignment(Alignment.TOP_LEFT);
+        mainLayout.addComponent(searchResultsLayout);
+
+        Button searchButton = new Button("Search");
+        searchButton.setClickShortcut(ShortcutAction.KeyCode.ENTER);
+        searchButton.addClickListener(e -> searchStreetNames());
+        searchLayout.addComponent(searchButton);
+
+        searchLayout.setExpandRatio(searchField, 1f);
+
+        setCompositionRoot(mainLayout);
+    }
+
+    private void searchStreetNames() {
+        searchResultsLayout.removeAllComponents();
+
+        String query = searchField.getValue();
+        if(StringUtils.isNotBlank(query)) {
+            Map<String, Set<String>> matchingStreetNamesByCity = postcodeService.getMatchingStreetNamesByCity(query);
+            if(matchingStreetNamesByCity.isEmpty()) {
+                searchResultsLayout.addComponent(new Label("No street names were found."));
+            }
+            else {
+                matchingStreetNamesByCity.forEach((key, value) -> addToResults(key, value));
+            }
+        }
+        else {
+            searchResultsLayout.addComponent(new Label("Please enter a search query."));
+        }
+
+        searchField.selectAll();
+    }
+
+    private void addToResults(String postOffice, Set<String> streetNames) {
+        StringBuilder value = new StringBuilder();
+        value.append(postOffice);
+        value.append(": ");
+        streetNames.forEach(street -> value.append(street + " "));
+        searchResultsLayout.addComponent(new Label(value.toString().trim()));
     }
 }

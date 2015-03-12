@@ -1,4 +1,4 @@
-package info.joninousiainen.examples.postcode;
+package info.joninousiainen.postcode.service;
 
 import info.joninousiainen.postcode.PostcodeApp;
 import info.joninousiainen.postcode.services.PostcodeService;
@@ -24,6 +24,15 @@ public class PostcodeServiceTest {
     @Test
     public void testGetTotalUniqueStreetNames() {
         assertEquals(99302, service.getTotalUniqueStreetNames());
+    }
+
+    @Test
+    public void testGetMatchingStreetNames() {
+        Map<String, Set<String>> results = service.getMatchingStreetNamesByCity("leirikaar");
+
+        Set<String> streetNamesInEspoo = results.get("Espoo");
+        assertEquals(1, streetNamesInEspoo.size());
+        assertEquals("Leirikaari", streetNamesInEspoo.iterator().next());
     }
 
     @Test

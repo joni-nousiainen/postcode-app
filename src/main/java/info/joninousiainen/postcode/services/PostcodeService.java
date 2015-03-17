@@ -3,7 +3,6 @@ package info.joninousiainen.postcode.services;
 import info.joninousiainen.postcode.model.PostcodeEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;

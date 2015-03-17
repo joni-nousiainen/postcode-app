@@ -96,8 +96,10 @@ class SearchComponent extends CustomComponent {
         if (StringUtils.isNotBlank(entry.getStreetNumberMin())) {
             value.append(' ');
             value.append(entry.getStreetNumberMin());
-            value.append(" ‒ ");
-            value.append(entry.getStreetNumberMax());
+            if (StringUtils.isNotBlank(entry.getStreetNumberMax())) {
+                value.append(" ‒ ");
+                value.append(entry.getStreetNumberMax());
+            }
         }
         value.append(", ");
         value.append(entry.getPostcode());

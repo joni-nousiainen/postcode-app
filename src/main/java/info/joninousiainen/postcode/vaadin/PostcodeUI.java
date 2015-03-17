@@ -16,6 +16,7 @@ import org.vaadin.spring.annotation.VaadinUIScope;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @VaadinUI
 @Theme("valo")
@@ -38,6 +39,7 @@ class SearchComponent extends CustomComponent {
 
     private TextField searchField;
     private VerticalLayout searchResultsLayout;
+    private Table searchResultsTable;
 
     @Override
     public void attach() {
@@ -60,6 +62,7 @@ class SearchComponent extends CustomComponent {
 
         searchResultsLayout = new VerticalLayout();
         searchResultsLayout.setWidth(80f, Unit.PERCENTAGE);
+        searchResultsLayout.setMargin(new MarginInfo(false, false, true, false));
         searchResultsLayout.setSpacing(true);
         searchResultsLayout.setDefaultComponentAlignment(Alignment.TOP_LEFT);
         mainLayout.addComponent(searchResultsLayout);
@@ -77,11 +80,27 @@ class SearchComponent extends CustomComponent {
     private void searchStreetNames() {
         searchResultsLayout.removeAllComponents();
 
+        searchResultsTable = new Table();
+        searchResultsTable.setWidth(100f, Unit.PERCENTAGE);
+        searchResultsTable.setPageLength(Integer.MAX_VALUE);
+        searchResultsTable.addContainerProperty("Street Address", String.class, "");
+        searchResultsTable.addContainerProperty("Postcode", String.class, "");
+        searchResultsTable.addContainerProperty("Post Office", String.class, "");
+
         String query = searchField.getValue();
         if(StringUtils.isNotBlank(query)) {
+            final AtomicInteger id = new AtomicInteger(1);
+
             postcodeService.getAllPostCodeEntries().stream()
                 .filter(entry -> entry.getStreetNameFi().toLowerCase().contains(query.toLowerCase()))
-                .forEach(entry -> addToResults(entry));
+                .forEach(entry -> addToResults(entry, id.getAndAdd(1)));
+
+            if (id.get() > 1) {
+                searchResultsLayout.addComponent(searchResultsTable);
+            }
+            else {
+                searchResultsLayout.addComponent(new Label("No matching street names found."));
+            }
         }
         else {
             searchResultsLayout.addComponent(new Label("Please enter a street name."));
@@ -90,21 +109,22 @@ class SearchComponent extends CustomComponent {
         searchField.selectAll();
     }
 
-    private void addToResults(PostcodeEntry entry) {
-        StringBuilder value = new StringBuilder();
-        value.append(entry.getStreetNameFi());
+    private void addToResults(PostcodeEntry entry, int id) {
+        StringBuilder streetAddress = new StringBuilder();
+        streetAddress.append(entry.getStreetNameFi());
         if (StringUtils.isNotBlank(entry.getStreetNumberMin())) {
-            value.append(' ');
-            value.append(entry.getStreetNumberMin());
+            streetAddress.append(' ');
+            streetAddress.append(entry.getStreetNumberMin());
             if (StringUtils.isNotBlank(entry.getStreetNumberMax())) {
-                value.append(" ‒ ");
-                value.append(entry.getStreetNumberMax());
+                streetAddress.append(" ‒ ");
+                streetAddress.append(entry.getStreetNumberMax());
             }
         }
-        value.append(", ");
-        value.append(entry.getPostcode());
-        value.append(' ');
-        value.append(entry.getPostOfficeFi());
-        searchResultsLayout.addComponent(new Label(value.toString().trim()));
+
+        searchResultsTable.addItem(new Object[] {
+                streetAddress.toString(),
+                entry.getPostcode(),
+                entry.getPostOfficeFi()
+        }, id);
     }
 }

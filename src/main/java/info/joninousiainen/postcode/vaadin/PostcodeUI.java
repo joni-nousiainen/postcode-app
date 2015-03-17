@@ -6,6 +6,7 @@ import com.vaadin.server.Page;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.*;
+import info.joninousiainen.postcode.model.PostcodeEntry;
 import info.joninousiainen.postcode.services.PostcodeService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,26 +79,30 @@ class SearchComponent extends CustomComponent {
 
         String query = searchField.getValue();
         if(StringUtils.isNotBlank(query)) {
-            Map<String, Set<String>> matchingStreetNamesByCity = postcodeService.getMatchingStreetNamesByCity(query);
-            if(matchingStreetNamesByCity.isEmpty()) {
-                searchResultsLayout.addComponent(new Label("No street names were found."));
-            }
-            else {
-                matchingStreetNamesByCity.forEach((key, value) -> addToResults(key, value));
-            }
+            postcodeService.getAllPostCodeEntries().stream()
+                .filter(entry -> entry.getStreetNameFi().toLowerCase().contains(query.toLowerCase()))
+                .forEach(entry -> addToResults(entry));
         }
         else {
-            searchResultsLayout.addComponent(new Label("Please enter a search query."));
+            searchResultsLayout.addComponent(new Label("Please enter a street name."));
         }
 
         searchField.selectAll();
     }
 
-    private void addToResults(String postOffice, Set<String> streetNames) {
+    private void addToResults(PostcodeEntry entry) {
         StringBuilder value = new StringBuilder();
-        value.append(postOffice);
-        value.append(": ");
-        streetNames.forEach(street -> value.append(street + " "));
+        value.append(entry.getStreetNameFi());
+        if (StringUtils.isNotBlank(entry.getStreetNumberMin())) {
+            value.append(' ');
+            value.append(entry.getStreetNumberMin());
+            value.append(" ‒ ");
+            value.append(entry.getStreetNumberMax());
+        }
+        value.append(", ");
+        value.append(entry.getPostcode());
+        value.append(' ');
+        value.append(entry.getPostOfficeFi());
         searchResultsLayout.addComponent(new Label(value.toString().trim()));
     }
 }

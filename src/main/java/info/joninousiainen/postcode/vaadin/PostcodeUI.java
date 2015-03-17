@@ -95,7 +95,10 @@ class SearchComponent extends CustomComponent {
                 .filter(entry -> entry.getStreetNameFi().toLowerCase().contains(query.toLowerCase()))
                 .forEach(entry -> addToResults(entry, id.getAndAdd(1)));
 
-            if (id.get() > 1) {
+            if (id.get() > 100) {
+                searchResultsLayout.addComponent(new Label("Over 100 matching street names found, please specify your query."));
+            }
+            else if (id.get() > 1) {
                 searchResultsLayout.addComponent(searchResultsTable);
             }
             else {
